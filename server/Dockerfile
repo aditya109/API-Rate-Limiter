@@ -1,13 +1,20 @@
-FROM python:alpine3.7
+# requirement-builder stage
+FROM python:3.8 AS builder
+COPY requirements.txt .
 
-COPY . /app
+# install dependencies to the local user directory (eg. /root/.local)
+RUN pip install --user -r requirements.txt
 
-WORKDIR /app
+# runner stage
+FROM python:3.8-slim
+WORKDIR /code
 
-RUN pip install -r requirements.txt
+# copy only the dependencies installation from the requirement-builder stage image
+COPY --from=builder /root/.local /root/.local
+COPY . .
 
-EXPOSE 5000
+# update PATH environment variable
+ENV PATH=/root.local:$PATH
 
-ENTRYPOINT [ "python" ]
-
-CMD [ "server.py" ]
+ENTRYPOINT ["python"]
+CMD ["./server.py"]
